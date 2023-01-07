@@ -1,85 +1,51 @@
-FROM alpine:latest
+FROM webdevops/php-nginx:8.2-alpine
 
-WORKDIR /var/www/html/
+ENV WEB_DOCUMENT_ROOT=/app/public
+ENV PHP_DISMOD=bz2,calendar,exiif,ffi,intl,gettext,ldap,mysqli,imap,pdo_pgsql,pgsql,soap,sockets,sysvmsg,sysvsm,sysvshm,shmop,xsl,gd,apcu,vips,yaml,imagick,mongodb,amqp
+
+WORKDIR /app
+
+COPY . .
+
+RUN export COMPOSER_ALLOW_SUPERUSER=1 \
+    && composer install \
+        --ignore-platform-reqs \
+        --no-interaction \
+        --no-plugins \
+        --no-scripts \
+        --prefer-dist \
+        --no-dev
 
 RUN echo "UTC" > /etc/timezone
-RUN apk add --no-cache zip unzip curl sqlite nginx supervisor 
+
+# Ensure all of our files are owned by the same user and group.
+RUN chown -R application:application .
 
 RUN apk add bash
 RUN sed -i 's/bin\/ash/bin\/bash/g' /etc/passwd
 
-RUN apk add --no-cache php8 \
-    php8-common \
-    php8-fpm \
-    php8-pdo \
-    php8-opcache \
-    php8-zip \
-    php8-phar \
-    php8-iconv \
-    php8-cli \
-    php8-curl \
-    php8-openssl \
-    php8-mbstring \
-    php8-tokenizer \
-    php8-fileinfo \
-    php8-json \
-    php8-xml \
-    php8-xmlwriter \
-    php8-simplexml \
-    php8-dom \
-    php8-pdo_mysql \
-    php8-pdo_sqlite \
-    php8-tokenizer \
-    php8-pecl-redis 
+COPY .docker/php.ini /opt/docker/etc/php/php.ini
 
+COPY .docker/nginx-laravel.conf /opt/docker/etc/nginx/vhost.common.d/20-laravel.conf
+COPY .docker/nginx-http.conf /opt/docker/etc/nginx/conf.d/20-nginx.conf
+COPY .docker/nginx-main.conf /opt/docker/etc/nginx/global.conf
 
-RUN ln -s /usr/bin/php8 /usr/bin/php
+COPY .docker/supervisord-laravel.conf /opt/docker/etc/supervisor.d/laravel.conf
 
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+COPY .docker/artisan-bootstrap.sh /opt/docker/provision/bootstrap.d/artisan.sh
+COPY .docker/artisan-entrypoint.sh /opt/docker/provision/provision/entrypoint.d/artisan.sh
 
-RUN mkdir -p /etc/supervisor.d/
-COPY .docker/supervisord.ini /etc/supervisor.d/supervisord.ini
-
-RUN mkdir -p /run/php/
-RUN touch /run/php/php8.0-fpm.pid
-
-COPY .docker/php-fpm.conf /etc/php8/php-fpm.conf
-COPY .docker/php.ini-production /etc/php8/php.ini
-
-COPY .docker/nginx.conf /etc/nginx/
-COPY .docker/nginx-laravel.conf /etc/nginx/modules/
-
-RUN rm -f /etc/nginx/http.d/default.conf
-
-RUN mkdir -p /run/nginx/
-RUN touch /run/nginx/nginx.pid
-
-RUN ln -sf /dev/stdout /var/log/nginx/access.log
-RUN ln -sf /dev/stderr /var/log/nginx/error.log
-
-COPY . .
-RUN composer install --no-dev
-
-RUN composer install \
-    --ignore-platform-reqs \
-    --no-interaction \
-    --no-plugins \
-    --no-scripts \
-    --prefer-dist \
-    --no-dev
-
-RUN chown -R nobody:nobody /var/www/html/storage
+RUN touch storage/logs/laravel.log
+RUN chmod u=+srwX,g=+srwX,o=+rwX -R storage/logs/laravel.log
 
 RUN mkdir /data
-RUN chown nobody:nobody /data
+RUN chown application:application /data
+RUN chmod u=+srwX,g=+srwX,o=rX -R /data
 
 VOLUME /data
 
-EXPOSE 80
+RUN chown -R application:application \
+            storage \
+            bootstrap/cache
 
-CMD ["supervisord", "-c", "/etc/supervisor.d/supervisord.ini"]
-
-
-
-
-
+RUN chmod u=+srwX,g=+srwX,o=rX -R storage

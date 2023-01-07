@@ -1,0 +1,61 @@
+# Development tools files
+.DS_Store
+.vscode/
+.idea
+.editorconfig
+*.code-workspace
+*.env*
+
+**.git
+**.gitignore
+**.gitattributes
+**.sass-cache
+
+readme.md
+
+*.config.js
+?ulpfile.js
+?untfile.js
+
+# Docker files
+
+Dockerfile
+docker-compose.yml
+run
+run.ps1
+
+# PHP development files
+tests/
+fixtures/
+phpunit.xml
+
+coverage/
+coverage.xml
+
+phpspec.yml
+
+images/
+
+# NPM files
+**/*node_modules
+package.json
+
+#
+
+# Development Laravel files
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+
+# For production apps do not copy any vendors
+#vendor
+
+# Optionally just not the test related vendors
+#vendor/**/test*
+#vendor/**/tests*
+#vendor/**/Tests*
+
+# For pre-built apps uncomment bellow
+#composer.json
