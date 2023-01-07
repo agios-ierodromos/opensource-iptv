@@ -38,11 +38,10 @@ COPY .docker/artisan-entrypoint.sh /opt/docker/provision/provision/entrypoint.d/
 RUN touch storage/logs/laravel.log
 RUN chmod u=+srwX,g=+srwX,o=+rwX -R storage/logs/laravel.log
 
-RUN mkdir /data
+VOLUME /data
+
 RUN chown application:application /data
 RUN chmod u=+srwX,g=+srwX,o=rX -R /data
-
-VOLUME /data
 
 RUN chown -R application:application \
             storage \

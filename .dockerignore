@@ -36,6 +36,9 @@ phpspec.yml
 
 images/
 
+data/
+*.sqlite
+
 # NPM files
 **/*node_modules
 package.json
